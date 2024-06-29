@@ -94,11 +94,15 @@ const App: React.FC = () => {
   // 決済資金需要を当預/預金で単純化して表す
   const [accState,setAccState] = useState(true); // アコモデーション
   const [accPerDep, setAccPerDep] = useState((stat.monetaryBase  - stat.credits)/(stat.moneyStock  - stat.credits)); // 当預/預金
-  const accPerDepToRate = (p:number)=>{return 1-Math.sqrt(p)}// 疑似金利換算式
-  const rateToAccPerDep = (r:number)=>{return (1-r)**2}
+  const accPerDepToRate = (p:number)=>{return 1.2 * (1-p)**3 - 0.2}// 疑似金利換算式
+  const rateToAccPerDep = (r:number)=>{return 1-((r + 0.2)/1.2)**(1/3)}
   const rate = useMemo(()=>{
     return accPerDepToRate(accPerDep)
   },[accPerDep]); // 疑似金利
+
+  const liquidityTrap = useMemo(()=>{
+    return rate < 0;
+  },[rate])
 
   // アコモデーションしない時の自動追従
   useEffect(()=>{
@@ -185,7 +189,7 @@ const App: React.FC = () => {
             type="range"
             min={0}
             max={1}
-            step={0.05}
+            step={0.01}
             value={rate}
             onChange={(v) => {onChangeRate(parseFloat(v.target.value))}}
             disabled={!accState}
@@ -193,6 +197,7 @@ const App: React.FC = () => {
             style={{ width: '240px' }}
           />
           <sup><a href="#footnote2" id="ref2">注2</a></sup>
+          <p style={{color:"red",display: "inline" }}><b>{ liquidityTrap ? "流動性の罠" : ""}</b></p>
         </div>
       </div>
       <div>
