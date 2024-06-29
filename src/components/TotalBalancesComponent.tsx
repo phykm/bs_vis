@@ -26,7 +26,7 @@ export const TotalBalancesComponent: React.FC<TotalBalancesComponentProps>= ({cr
   // 民間債務+純資産(名目勘定)
   const citizenLiabilities:Assets = useMemo(()=>{
     return [
-      {name:"※純資産", amount:governmentDebt, colorString: "lightgray"},
+      {name:"(純資産)", amount:governmentDebt, colorString: "lightgray"},
       {name:"借入金", amount:moneyStock - governmentDebt, colorString:"orange"},
     ];
   },[credits, monetaryBase,governmentDebt, moneyStock])
@@ -66,7 +66,7 @@ export const TotalBalancesComponent: React.FC<TotalBalancesComponentProps>= ({cr
   // 政府純負債(名目勘定項目)
   const governmentAssets:Assets = useMemo(()=>{
     return [
-      {name:"※純負債", amount:governmentDebt, colorString:"lightgray"},
+      {name:"(純負債)", amount:governmentDebt, colorString:"lightgray"},
     ]
   },[credits, monetaryBase,governmentDebt, moneyStock]);
 

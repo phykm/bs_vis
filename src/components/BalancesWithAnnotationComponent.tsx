@@ -18,7 +18,7 @@ export const BalancesWithAnnotationComponent : React.FC<BalancesWithAnnotationCo
   const annotate = 150;
   const svgWidth = padding*2 + assetWidth*8 + mergin*3 + annotate;
   return(
-  <svg className="mainSvg" width={svgWidth} height={moneyStock+labelSize*2 + 2*padding} xmlns="http://www.w3.org/2000/svg">
+  <svg id="balanceSvg" className="mainSvg" width={svgWidth} height={moneyStock+labelSize*2 + 2*padding} xmlns="http://www.w3.org/2000/svg">
     <g transform={`translate(${padding},${padding})`}>
       <TotalBalancesComponent credits={credits} monetaryBase={monetaryBase} governmentDebt={governmentDebt} moneyStock={moneyStock} labelSize={labelSize} assetWidth={assetWidth} mergin={mergin}/>
     </g>

@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { BalancesWithAnnotationComponent} from './components/BalancesWithAnnotationComponent';
 import { DocumentComponent } from './components/DocumentComponent';
+import { downloadSvgElement } from './lib/SvgDownloader';
 
 type MoneyStat = {credits:number,monetaryBase:number, netWorth:number, moneyStock:number}
 
@@ -60,7 +61,7 @@ const App: React.FC = () => {
   const sellOperation = useCallback(()=>{
     let newMonetaryBase = stat.monetaryBase - dx;
     if (newMonetaryBase < stat.credits) {
-      alert("銀行が流動性危機です。");
+      alert("買い手に当預がありません。");
     } else {
       setStat({...stat, monetaryBase:newMonetaryBase});
     }
@@ -88,7 +89,7 @@ const App: React.FC = () => {
   const buttonSize = "120px";
 
   // アコモデーション有効化：
-  const [accState,setAccState] = useState(false);
+  const [accState,setAccState] = useState(true);
   const onChange = useCallback((b:boolean)=>{
     setAccState(b)
   },[accState,setAccState]);
@@ -96,7 +97,7 @@ const App: React.FC = () => {
     if (accState) {
       let deposit = stat.moneyStock - stat.credits;
       let account = stat.monetaryBase - stat.credits;
-      let reserve = deposit * 0.2;
+      let reserve = deposit * 0.3;
       if (reserve - account > dx) {
         buyOperationNoAlert();
       }
@@ -108,6 +109,7 @@ const App: React.FC = () => {
   return (
     <div>
       <div>
+        <h3>資産を変化させる</h3>
         <div>
           <span style={{ marginRight: '10px' }}>現金操作</span>
           <button onClick={withdrawCredit} style={{ marginRight: '5px',width: buttonSize}}>現金を引き出す</button>
@@ -128,17 +130,21 @@ const App: React.FC = () => {
           <button onClick={fiscalExpend} style={{ marginRight: '5px',width: buttonSize}}>財政赤字</button>
           <button onClick={fiscalIncome} style={{ width: buttonSize }}>財政黒字</button>
         </div>
+        <div>
+          <span style={{ marginRight: '10px' }}>金融政策</span>
+          <input
+            type="checkbox"
+            checked={accState}
+            onChange={(e) => onChange(e.target.checked)}
+          />
+          <span className="checkbox-label">{ accState ? "アコモデーション有効" : "アコモデーション無効(手動オペ)"}<sup><a href="#footnote1" id="ref1">注1</a></sup></span>
+        </div>
       </div>
       <div>
-        <span style={{ marginRight: '10px' }}>金融政策</span>
-        <input
-          type="checkbox"
-          checked={accState}
-          onChange={(e) => onChange(e.target.checked)}
-        />
-        <span className="checkbox-label">所要準備(20%とする)までオペをする(準備率アコモデーション)※</span>
+        <h3>4部門バランスシート <button onClick={()=>{downloadSvgElement("balanceSvg")}}>SVGのダウンロード</button></h3> 
+        <BalancesWithAnnotationComponent credits={stat.credits} monetaryBase={stat.monetaryBase} governmentDebt={stat.netWorth} moneyStock={stat.moneyStock} />
       </div>
-      <BalancesWithAnnotationComponent credits={stat.credits} monetaryBase={stat.monetaryBase} governmentDebt={stat.netWorth} moneyStock={stat.moneyStock} />
+
       <DocumentComponent/>
     </div>
 

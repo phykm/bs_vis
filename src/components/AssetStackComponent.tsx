@@ -23,7 +23,7 @@ export const AssetStackComponent: React.FC<AssetStackComponentProps> = ({assets,
       assetsWithAncher.map((asset)=>{
         asset.name
         return (
-          <g transform={`translate(${0},${asset.height})`}>
+          <g key={asset.name} transform={`translate(${0},${asset.height})`}>
             <rect x={0} y={0} width={width} height={asset.amount} fill={asset.colorString}/>
             <text x={width/2} y={asset.amount / 2} dominantBaseline="middle" textAnchor="middle" fill="black" fontSize={textSize}>{asset.name}</text>
           </g>
