@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { BalancesWithAnnotationComponent} from './components/BalancesWithAnnotationComponent';
 import { DocumentComponent } from './components/DocumentComponent';
 import { downloadSvgElement } from './lib/SvgDownloader';
@@ -39,8 +39,10 @@ const App: React.FC = () => {
   const buyOperationNoAlert = useCallback(()=>{
     let newMonetaryBase = stat.monetaryBase + dx;
     if (newMonetaryBase > stat.netWorth) {
+      return false;
     } else {
       setStat({...stat, monetaryBase:newMonetaryBase});
+      return true;
     }
   },[stat]);
   const buyOperation = useCallback(()=>{
@@ -54,8 +56,10 @@ const App: React.FC = () => {
   const sellOperationNoAlert = useCallback(()=>{
     let newMonetaryBase = stat.monetaryBase - dx;
     if (newMonetaryBase < stat.credits) {
+      return false;
     } else {
       setStat({...stat, monetaryBase:newMonetaryBase});
+      return true;
     }
   },[stat]);
   const sellOperation = useCallback(()=>{
@@ -87,25 +91,51 @@ const App: React.FC = () => {
     }
   },[stat]);
   const buttonSize = "120px";
+  // 決済資金需要を当預/預金で単純化して表す
+  const [accPerDep, setAccPerDep] = useState((stat.monetaryBase  - stat.credits)/(stat.moneyStock  - stat.credits));
+  useEffect(()=>{
+    if (!accState) { // アコモデーションしないときは市井を反映
+      setAccPerDep((stat.monetaryBase - stat.credits)/(stat.moneyStock - stat.credits));
+    }
+  },[stat,setAccPerDep]);
+  const onChangeRate = useCallback((value:number)=>{
+    if (accState) {
+      if (1-value >= (stat.netWorth - stat.credits)/(stat.moneyStock - stat.credits)) {
+        return;
+      }
+      setAccPerDep(1-value);
+    }
+  },[stat]);
+  const rate = useMemo(()=>{return 1-accPerDep},[accPerDep]);
 
   // アコモデーション有効化：
   const [accState,setAccState] = useState(true);
-  const onChange = useCallback((b:boolean)=>{
+  const onChangeAccState = useCallback((b:boolean)=>{
     setAccState(b)
   },[accState,setAccState]);
+
+  // アコモデーション
   useEffect(()=>{
     if (accState) {
       let deposit = stat.moneyStock - stat.credits;
       let account = stat.monetaryBase - stat.credits;
-      let reserve = deposit * 0.3;
+      let reserve = deposit * accPerDep;
       if (reserve - account > dx) {
-        buyOperationNoAlert();
+        if(!buyOperationNoAlert()) {
+          // 目標を達成できないのでアコモデーションを解除
+          alert("市場に国債がありません。財政赤字を出してください。");
+          setAccState(false);
+        }
       }
       if (reserve - account < (-dx)) {
-        sellOperationNoAlert();
+        if(!sellOperationNoAlert()) {
+          // 目標を達成できないのでアコモデ－ションを解除
+          alert("中央銀行に資産がありません。");
+          setAccState(false);
+        }
       }
     }
-  },[stat,accState]);
+  },[stat,accState,accPerDep]);
   return (
     <div>
       <div>
@@ -135,9 +165,23 @@ const App: React.FC = () => {
           <input
             type="checkbox"
             checked={accState}
-            onChange={(e) => onChange(e.target.checked)}
+            onChange={(e) => onChangeAccState(e.target.checked)}
           />
           <span className="checkbox-label">{ accState ? "アコモデーション有効" : "アコモデーション無効(手動オペ)"}<sup><a href="#footnote1" id="ref1">注1</a></sup></span>
+        </div>
+        <div>
+          <span style={{ marginRight: '10px' }}>{ accState ? "政策金利" : "市中金利"}</span>
+          <input
+            type="range"
+            min={0}
+            max={1}
+            step={0.05}
+            value={rate}
+            onChange={(v) => {onChangeRate(parseFloat(v.target.value))}}
+            disabled={!accState}
+            className="slider"
+          />
+          <sup><a href="#footnote2" id="ref2">注2</a></sup>
         </div>
       </div>
       <div>
