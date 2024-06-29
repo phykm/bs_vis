@@ -92,34 +92,44 @@ const App: React.FC = () => {
   },[stat]);
   const buttonSize = "120px";
   // 決済資金需要を当預/預金で単純化して表す
-  const [accPerDep, setAccPerDep] = useState((stat.monetaryBase  - stat.credits)/(stat.moneyStock  - stat.credits));
+  const [accState,setAccState] = useState(true); // アコモデーション
+  const [accPerDep, setAccPerDep] = useState((stat.monetaryBase  - stat.credits)/(stat.moneyStock  - stat.credits)); // 当預/預金
+  const accPerDepToRate = (p:number)=>{return 1-Math.sqrt(p)}// 疑似金利換算式
+  const rateToAccPerDep = (r:number)=>{return (1-r)**2}
+  const rate = useMemo(()=>{
+    return accPerDepToRate(accPerDep)
+  },[accPerDep]); // 疑似金利
+
+  // アコモデーションしない時の自動追従
   useEffect(()=>{
-    if (!accState) { // アコモデーションしないときは市井を反映
+    if (!accState) {
       setAccPerDep((stat.monetaryBase - stat.credits)/(stat.moneyStock - stat.credits));
     }
-  },[stat,setAccPerDep]);
+  },[accState,stat,setAccPerDep]);
+
+  // 金利操作
   const onChangeRate = useCallback((value:number)=>{
     if (accState) {
-      if (1-value >= (stat.netWorth - stat.credits)/(stat.moneyStock - stat.credits)) {
+      let newAccPerDep = rateToAccPerDep(value)
+      if (newAccPerDep >= (stat.netWorth - stat.credits)/(stat.moneyStock - stat.credits)) {
+        // 国債が足りなくて達成不能
         return;
       }
-      setAccPerDep(1-value);
+      setAccPerDep(newAccPerDep);
     }
-  },[stat]);
-  const rate = useMemo(()=>{return 1-accPerDep},[accPerDep]);
+  },[accState,stat,setAccPerDep]);
 
-  // アコモデーション有効化：
-  const [accState,setAccState] = useState(true);
+  // アコモデーション有効化ボタン
   const onChangeAccState = useCallback((b:boolean)=>{
     setAccState(b)
-  },[accState,setAccState]);
+  },[setAccState]);
 
   // アコモデーション
   useEffect(()=>{
     if (accState) {
       let deposit = stat.moneyStock - stat.credits;
       let account = stat.monetaryBase - stat.credits;
-      let reserve = deposit * accPerDep;
+      let reserve = deposit * accPerDep; // 現在の当預/預金水準を維持させる。
       if (reserve - account > dx) {
         if(!buyOperationNoAlert()) {
           // 目標を達成できないのでアコモデーションを解除
@@ -180,6 +190,7 @@ const App: React.FC = () => {
             onChange={(v) => {onChangeRate(parseFloat(v.target.value))}}
             disabled={!accState}
             className="slider"
+            style={{ width: '240px' }}
           />
           <sup><a href="#footnote2" id="ref2">注2</a></sup>
         </div>
